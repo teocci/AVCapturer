@@ -27,7 +27,7 @@ public class AudioServer extends Thread {
     private static boolean stopStream = false;
     private byte[] tempBuffer;
     private int socketPort = 9990;
-    private int sampleRate = 44100;
+    private int packetSize = 120000;
 
     public AudioServer(int audioPort) {
         socketPort = audioPort;
@@ -85,8 +85,12 @@ public class AudioServer extends Thread {
                         element = obj.get("type");
 
                         if (element != null && element.getAsString().equals("data")) {
-                            receiveJSON(obj);
-                            audioData = new byte[120000];
+                            int foo = receiveJSON(obj);
+                            //packetSize = foo > packetSize? foo : packetSize;
+                            packetSize = foo * 16;
+
+                            System.out.println("packetSize: " + packetSize + " foo: " + foo);
+                            audioData = new byte[packetSize];
                             break;
                         }
                     } else {
@@ -97,7 +101,7 @@ public class AudioServer extends Thread {
 
                 if (audioData != null) {
                     sendOKResponse(outputStream);
-
+                    AudioInputStream ais = new AudioInputStream(inputStream, format, packetSize);
                     // read mic data
                     while ((len = inputStream.read(audioData)) != -1) {
                         /*InputStream baiss = new ByteArrayInputStream(audioData);
